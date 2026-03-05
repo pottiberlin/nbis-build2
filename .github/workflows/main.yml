@@ -1,59 +1,21 @@
-name: Build NBIS dwsq
+name: Debug Build
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  build:
+  debug:
     runs-on: ubuntu-latest
-
     steps:
+    - name: Check network
+      run: |
+        echo "Testing GitHub connectivity..."
+        ping -c 1 github.com || echo "PING failed"
+        curl -I https://api.github.com || echo "CURL failed"
+        
     - uses: actions/checkout@v3
-    
-    - name: Install dependencies
+      
+    - name: Simple test
       run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential wget curl libpng-dev zlib1g-dev
-    
-    - name: Download and extract NBIS
-      run: |
-        cd /tmp
-        git clone https://github.com/usnistgov/NBIS.git
-        cd NBIS
+        echo "Build test successful!"
         ls -la
-    
-    - name: Build NBIS
-      run: |
-        cd /tmp/NBIS
-        make it
-    
-    - name: Find and copy dwsq
-      run: |
-        find /tmp/NBIS -name "dwsq" -type f -executable
-        cp /tmp/NBIS/bin/dwsq ./dwsq
-        chmod +x ./dwsq
-        file ./dwsq
-    
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v1.0.${{ github.run_number }}
-        release_name: NBIS dwsq v1.0.${{ github.run_number }}
-        body: Automated NBIS dwsq binary build
-        draft: false
-        prerelease: false
-    
-    - name: Upload dwsq binary
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dwsq
-        asset_name: dwsq
-        asset_content_type: application/octet-stream
