@@ -1,1 +1,58 @@
-build-nbis.yml
+name: Build NBIS dwsq
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential wget libpng-dev zlib1g-dev
+    
+    - name: Download NBIS source
+      run: |
+        cd /tmp
+        wget https://www.nist.gov/customcf/get_pdf.cfm?pub_id=915523 -O nbis.zip 2>/dev/null || wget https://github.com/usnistgov/NBIS/archive/refs/heads/master.zip -O nbis.zip
+        unzip -q nbis.zip
+        ls -la
+    
+    - name: Build NBIS
+      run: |
+        cd /tmp/NBIS-master
+        make it 2>&1 | tail -20
+    
+    - name: Extract dwsq binary
+      run: |
+        find /tmp/NBIS-master -name "dwsq" -type f
+        cp /tmp/NBIS-master/bin/dwsq ./dwsq || true
+        ls -la dwsq
+    
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v1.0.${{ github.run_number }}
+        release_name: NBIS dwsq Build ${{ github.run_number }}
+        body: Automated NBIS dwsq binary build
+        draft: false
+        prerelease: false
+      id: create_release
+    
+    - name: Upload dwsq binary
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dwsq
+        asset_name: dwsq
+        asset_content_type: application/octet-stream
