@@ -15,14 +15,15 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential wget curl libpng-dev zlib1g-dev
+        sudo apt-get install -y build-essential wget libpng-dev zlib1g-dev
     
-    - name: Download and extract NBIS
+    - name: Download NBIS as ZIP
       run: |
         cd /tmp
-        git clone https://github.com/usnistgov/NBIS.git
-        cd NBIS
+        wget -O NBIS.zip https://github.com/usnistgov/NBIS/archive/refs/heads/master.zip
+        unzip -q NBIS.zip
         ls -la
+        mv NBIS-master NBIS
     
     - name: Build NBIS
       run: |
