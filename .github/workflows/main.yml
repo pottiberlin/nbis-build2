@@ -15,37 +15,38 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y build-essential wget libpng-dev zlib1g-dev
+        sudo apt-get install -y build-essential wget curl libpng-dev zlib1g-dev
     
-    - name: Download NBIS source
+    - name: Download and extract NBIS
       run: |
         cd /tmp
-        wget https://www.nist.gov/customcf/get_pdf.cfm?pub_id=915523 -O nbis.zip 2>/dev/null || wget https://github.com/usnistgov/NBIS/archive/refs/heads/master.zip -O nbis.zip
-        unzip -q nbis.zip
+        git clone https://github.com/usnistgov/NBIS.git
+        cd NBIS
         ls -la
     
     - name: Build NBIS
       run: |
-        cd /tmp/NBIS-master
-        make it 2>&1 | tail -20
+        cd /tmp/NBIS
+        make it
     
-    - name: Extract dwsq binary
+    - name: Find and copy dwsq
       run: |
-        find /tmp/NBIS-master -name "dwsq" -type f
-        cp /tmp/NBIS-master/bin/dwsq ./dwsq || true
-        ls -la dwsq
+        find /tmp/NBIS -name "dwsq" -type f -executable
+        cp /tmp/NBIS/bin/dwsq ./dwsq
+        chmod +x ./dwsq
+        file ./dwsq
     
     - name: Create Release
+      id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: v1.0.${{ github.run_number }}
-        release_name: NBIS dwsq Build ${{ github.run_number }}
+        release_name: NBIS dwsq v1.0.${{ github.run_number }}
         body: Automated NBIS dwsq binary build
         draft: false
         prerelease: false
-      id: create_release
     
     - name: Upload dwsq binary
       uses: actions/upload-release-asset@v1
